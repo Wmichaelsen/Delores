@@ -1,5 +1,6 @@
 import requests
 
+# Wille is a little pussy
 API_KEY = "EBHYLXXG3AQGI8XN"
 
 r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOG&outputsize=full&apikey='+API_KEY+'&dataType=CSV')
