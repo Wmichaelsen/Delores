@@ -10,6 +10,6 @@ git push origin master
 
 <strong>Invoke Keras Virtual Environment</strong><br>
 <ol>
-<li>cd wille/keras_virtualenv</li>
+<li><code>cd wille/keras_virtualenv</code></li>
 <li>source ./bin/activate</li>
 </ol>
