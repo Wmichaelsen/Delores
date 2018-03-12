@@ -91,15 +91,26 @@ for epok in epoks[0:1]:
     slope_high, intercept_high, r_value_high, p_value_high, std_err_high = stats.linregress(x_high, y_high)
     slope_low, intercept_low, r_value_low, p_value_low, std_err_low = stats.linregress(x_low, y_low)
 
-    #plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
+    plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
 
 #---- Wedge calculator -----
 # Undre har storre k-varde an ovre
 # above_slope is the five highest values
 # below_slope is the five lowest values
 
+# x_one = np.array(DICTIONARY).astype(np.float)
+# y_one = np.array(DICTIONARY).astype(np.float)
+#
+# x_two = np.array(DICTIONARY).astype(np.float)
+# y_two = np.array(DICTIONARY).astype(np.float)
+#
+# above_slope, intercept_above, r_value_above, p_value_above, std_err_above = stats.linregress(x_one, y_one) # highest values
+# below_slope, intercept_below, r_value_below, p_value_below, std_err_below = stats.linregress(x_two, y_two)
+#
+#
 # if above_slope > 0 and below_slope > 0 and above_slope < below_slope:  # Rising wedge
 #     print "Rising wedge"
+#
 #
 # elif above_slope < 0 and below_slope < 0 and above_slope < below_slope:  # Falling wedge
 #     print "Falling wedge"
