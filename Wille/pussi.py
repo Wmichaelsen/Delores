@@ -13,7 +13,23 @@ interval = 6
 
 candleStickInterval = 1
 
+
 #---- HELPER FUNCTIONS ----
+
+
+# Calculating wedges, 0=Rising 1=Falling 2=No wedge
+def wedge_calc(slope_high, slope_low):
+    if slope_high > 0 and slope_low > 0 and slope_high < slope_low:  # Rising wedge
+        print "Rising wedge"
+        return 0
+
+    elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:  # Falling wedge
+        print "Falling wedge"
+        return 1
+
+    else:
+        print "No falling or rising wedge found"
+        return 2
 
 # Used to retrieve all elements at index n in nested list list
 def getSubList(list, n):
@@ -148,13 +164,4 @@ print wedges
 # below_slope, intercept_below, r_value_below, p_value_below, std_err_below = stats.linregress(x_two, y_two)
 
 
-def wedge_calc(slope_high, slope_low):
-    if slope_high > 0 and slope_low > 0 and slope_high < slope_low:  # Rising wedge
-        print "Rising wedge"
 
-
-    elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:  # Falling wedge
-        print "Falling wedge"
-
-    else:
-        print "No falling or rising wedge found"
