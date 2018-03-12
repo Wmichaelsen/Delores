@@ -15,6 +15,17 @@ candleStickInterval = 1
 
 #---- HELPER FUNCTIONS ----
 
+
+def wedge_calc(slope_high, slope_low):
+    if slope_high > 0 and slope_low > 0 and slope_high < slope_low:  # Rising wedge
+        print "Rising wedge"
+
+    elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:  # Falling wedge
+        print "Falling wedge"
+
+    else:
+        print "No falling or rising wedge found"
+
 # Used to retrieve all elements at index n in nested list list
 def get_subList(list, n):
     newList = []
@@ -40,6 +51,8 @@ def get_wedges(sortedClosePrices):
     slope_low, intercept_low, r_value_low, p_value_low, std_err_low = stats.linregress(x_low, y_low)
 
     #plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
+
+    wedge_calc(slope_high, slope_low)
 
     return [[slope_high, intercept_high, r_value_high, p_value_high, std_err_high],[slope_low, intercept_low, r_value_low, p_value_low, std_err_low]]
 
@@ -136,10 +149,11 @@ for epok in epoks[0:14]:
     # Check if current wedge leads to higher or lower price next epok
     nextEpok = epoks[counter+1]
 
-    is_bull(nextEpok, currentEpokHighest)
+
 
     counter += 1
 
+print wedges
 #---- Wedge calculator -----
 # Undre har storre k-varde an ovre
 # above_slope is the five highest values
@@ -153,14 +167,3 @@ for epok in epoks[0:14]:
 #
 # above_slope, intercept_above, r_value_above, p_value_above, std_err_above = stats.linregress(x_one, y_one) # highest values
 # below_slope, intercept_below, r_value_below, p_value_below, std_err_below = stats.linregress(x_two, y_two)
-#
-#
-# if above_slope > 0 and below_slope > 0 and above_slope < below_slope:  # Rising wedge
-#     print "Rising wedge"
-#
-#
-# elif above_slope < 0 and below_slope < 0 and above_slope < below_slope:  # Falling wedge
-#     print "Falling wedge"
-#
-# else:
-#     print "No wedge found"
