@@ -3,10 +3,8 @@
 git add . (eller fil)<br>
 git commit -m "Description"<br>
 (git pull origin master)<br>
-git push origin master
+git push origin master<br>
 
-
-<br> <br>
 
 <strong>Invoke Keras Virtual Environment</strong><br>
 <ol>
