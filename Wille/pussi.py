@@ -17,18 +17,19 @@ candleStickInterval = 1
 #---- HELPER FUNCTIONS ----
 
 
+# Writes data to csv file
+def write_to_file(priceList, result):
+
+
 # Calculating wedges, 0=Rising 1=Falling 2=No wedge
 def wedge_calc(slope_high, slope_low):
     if slope_high > 0 and slope_low > 0 and slope_high < slope_low:  # Rising wedge
-        print "Rising wedge"
         return 0
 
     elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:  # Falling wedge
-        print "Falling wedge"
         return 1
 
     else:
-        print "No falling or rising wedge found"
         return 2
 
 # Used to retrieve all elements at index n in nested list list
@@ -57,9 +58,7 @@ def get_wedges(sortedClosePrices):
 
     #plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
 
-    wedge_calc(slope_high, slope_low)
-
-    return [[slope_high, intercept_high, r_value_high, p_value_high, std_err_high],[slope_low, intercept_low, r_value_low, p_value_low, std_err_low]]
+    return wedge_calc(slope_high, slope_low)
 
 # Plots wedges
 def plot_wedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high):
@@ -149,12 +148,11 @@ for epok in epoks[0:14]:
 
     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
-    wedges.append(get_wedges(sortedClosePrices))
 
     # Check if current wedge leads to higher or lower price next epok
     nextEpok = epoks[counter+1]
 
-
+    FIX is_bull AND THEN ADD TO  TEXT FILE IF WEDGE EXISTS
 
     counter += 1
 
