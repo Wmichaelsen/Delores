@@ -22,6 +22,28 @@ def getSubList(list, n):
         newList.append(x[n])
     return newList
 
+# Calculate wedges. Returns a list containing two list, each holding wedge data
+def getWedges(closePrices):
+
+    # Sort close prices and split into highest and lowest
+    sortedClosePrices = sorted(closePrices, key=itemgetter(1))
+    lows = sortedClosePrices[0:(interval/2)]
+    highs = sortedClosePrices[interval/2:interval]
+
+    # Construct lists for regression
+    x_high = np.array(getSubList(highs, 0)).astype(np.float)
+    y_high = np.array(getSubList(highs, 1)).astype(np.float)
+    x_low = np.array(getSubList(lows, 0)).astype(np.float)
+    y_low = np.array(getSubList(lows, 1)).astype(np.float)
+
+    # Linear regression to form wedges
+    slope_high, intercept_high, r_value_high, p_value_high, std_err_high = stats.linregress(x_high, y_high)
+    slope_low, intercept_low, r_value_low, p_value_low, std_err_low = stats.linregress(x_low, y_low)
+
+    plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
+
+    return [[slope_high, intercept_high, r_value_high, p_value_high, std_err_high],[slope_low, intercept_low, r_value_low, p_value_low, std_err_low]]
+
 # Plots wedges
 def plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high):
     plt.plot(x_high, y_high, 'o', label='high prices')
@@ -77,21 +99,8 @@ for epok in epoks[0:1]:
         unixTime = datetime.datetime.strptime(date, '%Y-%m-%d').strftime("%s")
         closePrices.append([unixTime, currentClosePrice])
 
-    # Sort close prices and split into highest and lowest
-    sortedClosePrices = sorted(closePrices, key=itemgetter(1))
-    lows = sortedClosePrices[0:(interval/2)]
-    highs = sortedClosePrices[interval/2:interval]
+    wedges = getWedges(closePrices)
 
-    x_high = np.array(getSubList(highs, 0)).astype(np.float)
-    y_high = np.array(getSubList(highs, 1)).astype(np.float)
-    x_low = np.array(getSubList(lows, 0)).astype(np.float)
-    y_low = np.array(getSubList(lows, 1)).astype(np.float)
-
-    # Linear regression to form wedges
-    slope_high, intercept_high, r_value_high, p_value_high, std_err_high = stats.linregress(x_high, y_high)
-    slope_low, intercept_low, r_value_low, p_value_low, std_err_low = stats.linregress(x_low, y_low)
-
-    plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
 
 #---- Wedge calculator -----
 # Undre har storre k-varde an ovre
