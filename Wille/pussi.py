@@ -16,24 +16,24 @@ candleStickInterval = 1
 #---- HELPER FUNCTIONS ----
 
 # Used to retrieve all elements at index n in nested list list
-def getSubList(list, n):
+def get_subList(list, n):
     newList = []
     for x in list:
         newList.append(x[n])
     return newList
 
 # Calculate wedges. Returns a list containing two list, each holding wedge data
-def getWedges(sortedClosePrices):
+def get_wedges(sortedClosePrices):
 
     # Sort close prices and split into highest and lowest
     lows = sortedClosePrices[0:(interval/2)]
     highs = sortedClosePrices[interval/2:interval]
 
     # Construct lists for regression
-    x_high = np.array(getSubList(highs, 0)).astype(np.float)
-    y_high = np.array(getSubList(highs, 1)).astype(np.float)
-    x_low = np.array(getSubList(lows, 0)).astype(np.float)
-    y_low = np.array(getSubList(lows, 1)).astype(np.float)
+    x_high = np.array(get_subList(highs, 0)).astype(np.float)
+    y_high = np.array(get_subList(highs, 1)).astype(np.float)
+    x_low = np.array(get_subList(lows, 0)).astype(np.float)
+    y_low = np.array(get_subList(lows, 1)).astype(np.float)
 
     # Linear regression to form wedges
     slope_high, intercept_high, r_value_high, p_value_high, std_err_high = stats.linregress(x_high, y_high)
@@ -44,7 +44,7 @@ def getWedges(sortedClosePrices):
     return [[slope_high, intercept_high, r_value_high, p_value_high, std_err_high],[slope_low, intercept_low, r_value_low, p_value_low, std_err_low]]
 
 # Plots wedges
-def plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high):
+def plot_wedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high):
     plt.plot(x_high, y_high, 'o', label='high prices')
     plt.plot(x_high, intercept_high + slope_high*x_high, 'r', label='high price line')
     plt.plot(x_low, y_low, 's', label='low prices')
@@ -53,7 +53,7 @@ def plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept
     plt.show()
 
 # Determines bull/bear for coming epok
-def isBull(nextEpok, currentHigh):
+def is_bull(nextEpok, currentHigh):
     nextEpokPrices = []
     for date in nextEpok:
         currentClosePrice = nextEpok[date]["4. close"]
@@ -63,13 +63,20 @@ def isBull(nextEpok, currentHigh):
     nextEpokHighest = sortedNextEpokPrices[len(sortedNextEpokPrices)-1]
     nextEpokLowest = sortedNextEpokPrices[0]
 
+    print nextEpokHighest
+    print currentHigh
+    print nextEpokLowest
+
+    print abs(nextEpokHighest-currentHigh)
+    print abs(currentHigh-nextEpokLowest)
+
     if nextEpokHighest < currentHigh:
         return False
-    else:
-        if abs(nextEpokHighest-currentHigh) > abs(currentHigh-nextEpokLowest):
-            return True
-        else:
-            print False
+    # else:
+    #     if abs(nextEpokHighest-currentHigh) > abs(currentHigh-nextEpokLowest):
+    #         return True
+    #     else:
+    #         print False
 
 #---- DATA GATHERING ----
 r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOG&outputsize=full&apikey='+API_KEY)
@@ -106,7 +113,10 @@ for dateKey in sortedStockDataKeys:
 # Iterate over each epok containing 5 dictionaries
 wedges = []
 counter = 0
-for epok in epoks[0:2]:
+
+print epoks[12]
+
+for epok in epoks[0:14]:
 
     # List of all close prices in current epok
     closePrices = []
@@ -121,12 +131,12 @@ for epok in epoks[0:2]:
 
     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
-    wedges.append(getWedges(sortedClosePrices))
+    wedges.append(get_wedges(sortedClosePrices))
 
     # Check if current wedge leads to higher or lower price next epok
     nextEpok = epoks[counter+1]
 
-    print isBull(nextEpok, currentEpokHighest)
+    is_bull(nextEpok, currentEpokHighest)
 
     counter += 1
 
