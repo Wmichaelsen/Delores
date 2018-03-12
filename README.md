@@ -1,8 +1,8 @@
 # Delores
 
-git add . (eller fil)
-git commit -m "Description"
-(git pull origin master)
+git add . (eller fil)<br>
+git commit -m "Description"<br>
+(git pull origin master)<br>
 git push origin master
 
 
