@@ -1,4 +1,6 @@
 import requests
+from scipy import stats
+import numpy as np
 
 API_KEY = "EBHYLXXG3AQGI8XN"
 
@@ -22,12 +24,23 @@ for key in stockData
 # above_slope is the five highest values
 # below_slope is the five lowest values
 
-# if above_slope > 0 and below_slope > 0 and above_slope < below_slope:  # Rising wedge
-#     print "Rising wedge"
-#
-# elif above_slope < 0 and below_slope < 0 and above_slope < below_slope:  # Falling wedge
-#     print "Falling wedge"
-#
-# else:
-#     print "No wedge found"
+x_one = np.array(DICTIONARY).astype(np.float)
+y_one = np.array(DICTIONARY).astype(np.float)
+
+x_two = np.array(DICTIONARY).astype(np.float)
+y_two = np.array(DICTIONARY).astype(np.float)
+
+above_slope, intercept_above, r_value_above, p_value_above, std_err_above = stats.linregress(x_one, y_one) # highest values
+below_slope, intercept_below, r_value_below, p_value_below, std_err_below = stats.linregress(x_two, y_two)
+
+
+if above_slope > 0 and below_slope > 0 and above_slope < below_slope:  # Rising wedge
+    print "Rising wedge"
+
+
+elif above_slope < 0 and below_slope < 0 and above_slope < below_slope:  # Falling wedge
+    print "Falling wedge"
+
+else:
+    print "No wedge found"
 
