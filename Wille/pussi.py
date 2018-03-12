@@ -18,17 +18,15 @@ candleStickInterval = 1
 
 
 # Writes data to csv file
-def write_to_file(priceList, result):
+#def write_to_file(priceList, result):
 
 
 # Calculating wedges, 0=Rising 1=Falling 2=No wedge
 def wedge_calc(slope_high, slope_low):
-    if slope_high > 0 and slope_low > 0 and slope_high < slope_low:  # Rising wedge
+    if slope_high > 0 and slope_low > 0 and slope_high < slope_low:     # Rising wedge
         return 0
-
-    elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:  # Falling wedge
+    elif slope_high < 0 and slope_low < 0 and slope_high < slope_low:   # Falling wedge
         return 1
-
     else:
         return 2
 
@@ -56,7 +54,7 @@ def get_wedges(sortedClosePrices):
     slope_high, intercept_high, r_value_high, p_value_high, std_err_high = stats.linregress(x_high, y_high)
     slope_low, intercept_low, r_value_low, p_value_low, std_err_low = stats.linregress(x_low, y_low)
 
-    #plotWedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
+    #plot_wedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercept_high, slope_high)
 
     return wedge_calc(slope_high, slope_low)
 
@@ -73,27 +71,20 @@ def plot_wedges(x_low, y_low, intercept_low, slope_low, x_high, y_high, intercep
 def is_bull(nextEpok, currentHigh):
     nextEpokPrices = []
     for date in nextEpok:
-        currentClosePrice = nextEpok[date]["4. close"]
-        nextEpokPrices.append(currentClosePrice)
+        currentClosePrice = float(nextEpok[date]["4. close"])
+        nextEpokPrices.append(float(currentClosePrice))
 
     sortedNextEpokPrices = sorted(nextEpokPrices)
     nextEpokHighest = sortedNextEpokPrices[len(sortedNextEpokPrices)-1]
     nextEpokLowest = sortedNextEpokPrices[0]
 
-    print nextEpokHighest
-    print currentHigh
-    print nextEpokLowest
-
-    print abs(nextEpokHighest-currentHigh)
-    print abs(currentHigh-nextEpokLowest)
-
     if nextEpokHighest < currentHigh:
         return False
-    # else:
-    #     if abs(nextEpokHighest-currentHigh) > abs(currentHigh-nextEpokLowest):
-    #         return True
-    #     else:
-    #         print False
+    else:
+        if abs(nextEpokHighest-currentHigh) > abs(currentHigh-nextEpokLowest):
+            return True
+        else:
+            return False
 
 #---- DATA GATHERING ----
 r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOG&outputsize=full&apikey='+API_KEY)
@@ -127,46 +118,37 @@ for dateKey in sortedStockDataKeys:
 
 #---- WEDGE CONSTRUCTION ----
 
-# Iterate over each epok containing 5 dictionaries
-wedges = []
+
+finalData = []
 counter = 0
 
-print epoks[12]
-
-for epok in epoks[0:14]:
+# Iterate over each epok containing 5 dictionaries
+for epok in epoks:
 
     # List of all close prices in current epok
     closePrices = []
 
     # Iterate over each dictionary within epok
     for date in epok:
-        currentClosePrice = epok[date]["4. close"]
+        currentClosePrice = float(epok[date]["4. close"])
 
         # Convert time to UNIX time
         unixTime = datetime.datetime.strptime(date, '%Y-%m-%d').strftime("%s")
-        closePrices.append([unixTime, currentClosePrice])
+        closePrices.append([unixTime, float(currentClosePrice)])
 
     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
 
-    # Check if current wedge leads to higher or lower price next epok
-    nextEpok = epoks[counter+1]
+    # Only use epok if RAISING wedge exists
+    if get_wedges(sortedClosePrices) == 0:
 
-    FIX is_bull AND THEN ADD TO  TEXT FILE IF WEDGE EXISTS
+        # Check if current wedge leads to higher or lower price next epok
+        nextEpok = epoks[counter+1]
+        if is_bull(nextEpok, currentEpokHighest):
+            finalData.append([np.array(sortedClosePrices)[:,1].tolist(), 1])
+        else:
+            finalData.append([np.array(sortedClosePrices)[:,1].tolist(), 0])
 
     counter += 1
 
-print wedges
-#---- Wedge calculator -----
-# Undre har storre k-varde an ovre
-# above_slope is the five highest values
-# below_slope is the five lowest values
-
-# x_one = np.array(DICTIONARY).astype(np.float)
-# y_one = np.array(DICTIONARY).astype(np.float)
-#
-# x_two = np.array(DICTIONARY).astype(np.float)
-# y_two = np.array(DICTIONARY).astype(np.float)
-#
-# above_slope, intercept_above, r_value_above, p_value_above, std_err_above = stats.linregress(x_one, y_one) # highest values
-# below_slope, intercept_below, r_value_below, p_value_below, std_err_below = stats.linregress(x_two, y_two)
+print len(finalData)
