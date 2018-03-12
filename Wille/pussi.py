@@ -37,3 +37,17 @@ for dateKey in sortedStockDataKeys:
         counter = 0
 
 print len(epoks)
+
+#---- Wedge calculator -----
+# Undre har storre k-varde an ovre
+# above_slope is the five highest values
+# below_slope is the five lowest values
+
+# if above_slope > 0 and below_slope > 0 and above_slope < below_slope:  # Rising wedge
+#     print "Rising wedge"
+#
+# elif above_slope < 0 and below_slope < 0 and above_slope < below_slope:  # Falling wedge
+#     print "Falling wedge"
+#
+# else:
+#     print "No wedge found"
