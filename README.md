@@ -10,4 +10,5 @@ git push origin master<br>
 <ol>
 <li><code>cd wille/keras_virtualenv</code></li>
 <li><code>source ./bin/activate</code></li>
+<li><code>deactivate</code></li>
 </ol>
