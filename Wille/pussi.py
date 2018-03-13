@@ -4,6 +4,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import datetime
 from operator import itemgetter
+import csv
 
 #---- CONSTANTS ----
 API_KEY = "EBHYLXXG3AQGI8XN"
@@ -17,8 +18,12 @@ candleStickInterval = 1
 #---- HELPER FUNCTIONS ----
 
 
-# Writes data to csv file
-#def write_to_file(priceList, result):
+# Loading data
+def loadData():
+    r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=MSFT&interval=1min&outputsize=full&apikey='+API_KEY)
+    if r.status_code != requests.codes.ok:
+        print "Bad request"
+    return r.json()
 
 
 # Calculating wedges, 0=Rising 1=Falling 2=No wedge
@@ -86,19 +91,27 @@ def is_bull(nextEpok, currentHigh):
         else:
             return False
 
+# Writes data to CSV file
+def writeDataToCSV(data, fileName):
+    with open(fileName, 'ao') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(data)
+
+def formatDate(date):
+    newDate = date
+    newDate = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
+    return newDate
+
 #---- DATA GATHERING ----
-r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=GOOG&outputsize=full&apikey='+API_KEY)
 
-if r.status_code != requests.codes.ok:
-    print "Bad request"
-
-myJSON = r.json()
+myJSON = loadData()
 
 # Original stock data object
-stockData = myJSON["Time Series (Daily)"]
+stockData = myJSON["Time Series (1min)"]
 
 # Takes stockData and sorts all keys (the dates) and store them in array for later use
-sortedStockDataKeys = sorted(stockData.keys(), key=lambda d: map(int, d.split("-")))
+sortedStockDataKeys = sorted(map(lambda d: formatDate(d), stockData.keys()))
+#sortedStockDataKeys = sorted(stockData.keys(), key=lambda d: map(formatDate, d))
 
 
 #---- DATA STRUCTURING (FORMING EPOKS) ----
@@ -108,13 +121,13 @@ epok = {}
 counter = 0
 for dateKey in sortedStockDataKeys:
     if counter < interval:
-        epok[dateKey] = stockData[dateKey]
+        regularTime = datetime.datetime.fromtimestamp(int(dateKey)).strftime('%Y-%m-%d %H:%M:%S')
+        epok[regularTime] = stockData[regularTime]
         counter += 1
     else:
         epoks.append(epok)
         epok = {}
         counter = 0
-
 
 #---- WEDGE CONSTRUCTION ----
 
@@ -133,8 +146,8 @@ for epok in epoks:
         currentClosePrice = float(epok[date]["4. close"])
 
         # Convert time to UNIX time
-        unixTime = datetime.datetime.strptime(date, '%Y-%m-%d').strftime("%s")
-        closePrices.append([unixTime, float(currentClosePrice)])
+        unixTime = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
+        closePrices.append([float(unixTime), float(currentClosePrice)])
 
     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
@@ -145,10 +158,12 @@ for epok in epoks:
         # Check if current wedge leads to higher or lower price next epok
         nextEpok = epoks[counter+1]
         if is_bull(nextEpok, currentEpokHighest):
-            finalData.append([np.array(sortedClosePrices)[:,1].tolist(), 1])
+            fin = np.append(np.array(sortedClosePrices)[:,1],int(1)).tolist()
+            finalData.append(fin)
         else:
-            finalData.append([np.array(sortedClosePrices)[:,1].tolist(), 0])
+            fin = np.append(np.array(sortedClosePrices)[:,1],int(0)).tolist()
+            finalData.append(fin)
 
     counter += 1
 
-print len(finalData)
+writeDataToCSV(finalData, "finalData.csv")
