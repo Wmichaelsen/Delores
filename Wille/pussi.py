@@ -18,14 +18,6 @@ candleStickInterval = 1
 #---- HELPER FUNCTIONS ----
 
 
-# Loading data
-def loadData():
-    r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=MSFT&interval=1min&outputsize=full&apikey='+API_KEY)
-    if r.status_code != requests.codes.ok:
-        print "Bad request"
-    return r.json()
-
-
 # Calculating wedges, 0=Rising 1=Falling 2=No wedge
 def wedge_calc(slope_high, slope_low):
     if slope_high > 0 and slope_low > 0 and slope_high < slope_low:     # Rising wedge
@@ -93,7 +85,7 @@ def is_bull(nextEpok, currentHigh):
 
 # Writes data to CSV file
 def writeDataToCSV(data, fileName):
-    with open(fileName, 'ao') as csvfile:
+    with open(fileName, 'a') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(data)
 
@@ -102,68 +94,167 @@ def formatDate(date):
     newDate = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
     return newDate
 
-#---- DATA GATHERING ----
+# Loads all stock symbols from SP500 1st column
+def loadStockSymbols(stocksCSV):
+    with open(stocksCSV) as file:
+        reader = csv.reader(file)
+        stocks = list(reader)
 
-myJSON = loadData()
+    stockSymbols = np.array(stocks)[:,0].tolist()
 
-# Original stock data object
-stockData = myJSON["Time Series (1min)"]
+    return stockSymbols
 
-# Takes stockData and sorts all keys (the dates) and store them in array for later use
-sortedStockDataKeys = sorted(map(lambda d: formatDate(d), stockData.keys()))
-#sortedStockDataKeys = sorted(stockData.keys(), key=lambda d: map(formatDate, d))
+#---- MAIN FUNCTIONS ----
 
+# Loading data for given stock
+def loadData(symbol):
+    r = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol='+symbol+'&interval=1min&outputsize=full&apikey='+API_KEY)
+    if r.status_code != requests.codes.ok:
+        print "Bad request"
+        return 0
+    print symbol
+    return r.json()["Time Series (1min)"]
 
-#---- DATA STRUCTURING (FORMING EPOKS) ----
-epoks = []
-epok = {}
+# Forming epoks given stockData for specific stock
+def formEpoks(stockData):
+    sortedStockDataKeys = sorted(map(lambda d: formatDate(d), stockData.keys()))
 
-counter = 0
-for dateKey in sortedStockDataKeys:
-    if counter < interval:
-        regularTime = datetime.datetime.fromtimestamp(int(dateKey)).strftime('%Y-%m-%d %H:%M:%S')
-        epok[regularTime] = stockData[regularTime]
-        counter += 1
-    else:
-        epoks.append(epok)
-        epok = {}
-        counter = 0
+    epoks = []
+    epok = {}
 
-#---- WEDGE CONSTRUCTION ----
-
-
-finalData = []
-counter = 0
-
-# Iterate over each epok containing 5 dictionaries
-for epok in epoks:
-
-    # List of all close prices in current epok
-    closePrices = []
-
-    # Iterate over each dictionary within epok
-    for date in epok:
-        currentClosePrice = float(epok[date]["4. close"])
-
-        # Convert time to UNIX time
-        unixTime = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
-        closePrices.append([float(unixTime), float(currentClosePrice)])
-
-    sortedClosePrices = sorted(closePrices, key=itemgetter(1))
-    currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
-
-    # Only use epok if RAISING wedge exists
-    if get_wedges(sortedClosePrices) == 0:
-
-        # Check if current wedge leads to higher or lower price next epok
-        nextEpok = epoks[counter+1]
-        if is_bull(nextEpok, currentEpokHighest):
-            fin = np.append(np.array(sortedClosePrices)[:,1],int(1)).tolist()
-            finalData.append(fin)
+    counter = 0
+    for dateKey in sortedStockDataKeys:
+        if counter < interval:
+            regularTime = datetime.datetime.fromtimestamp(int(dateKey)).strftime('%Y-%m-%d %H:%M:%S')
+            epok[regularTime] = stockData[regularTime]
+            counter += 1
         else:
-            fin = np.append(np.array(sortedClosePrices)[:,1],int(0)).tolist()
-            finalData.append(fin)
+            epoks.append(epok)
+            epok = {}
+            counter = 0
 
-    counter += 1
+    return epoks
 
-writeDataToCSV(finalData, "finalData.csv")
+# Wedge construction given epoks for specific stock
+def testWedge(epoks):
+    finalData = []
+    counter = 0
+
+    # Iterate over each epok containing 5 dictionaries
+    for epok in epoks:
+
+        # List of all close prices in current epok
+        closePrices = []
+
+        # Iterate over each dictionary within epok
+        for date in epok:
+            currentClosePrice = float(epok[date]["4. close"])
+
+            # Convert time to UNIX time
+            unixTime = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
+            closePrices.append([float(unixTime), float(currentClosePrice)])
+
+        sortedClosePrices = sorted(closePrices, key=itemgetter(1))
+        currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
+
+        # Only use epok if RAISING wedge exists
+        if get_wedges(sortedClosePrices) == 0:
+
+            # Check if current wedge leads to higher or lower price next epok
+            if counter < len(epoks)-1:
+                nextEpok = epoks[counter+1]
+                if is_bull(nextEpok, currentEpokHighest):
+                    fin = np.append(np.array(sortedClosePrices)[:,1],int(1)).tolist()
+                    finalData.append(fin)
+                else:
+                    fin = np.append(np.array(sortedClosePrices)[:,1],int(0)).tolist()
+                    finalData.append(fin)
+
+        counter += 1
+
+    return finalData
+
+def saveFinalData(finalData):
+    writeDataToCSV(finalData, "finalData.csv")
+
+
+#---- SUPER FUNCTION ----
+
+
+def collectDataForSymbol(symbol):
+    stockData = loadData(symbol)
+    if stockData != 0:
+        epoks = formEpoks(stockData)
+        finalData = testWedge(epoks)
+        saveFinalData(finalData)
+    else:
+        print "loadData() fail. Bad request"
+
+
+#---- INITIATION ----
+
+
+allStocks = loadStockSymbols("sp500stocks.csv")
+
+# Maps the super function onto each stock
+map(lambda d: collectDataForSymbol(d), allStocks)
+
+
+# stockData = loadData()
+#
+# # Takes stockData and sorts all keys (the dates) and store them in array for later use
+# sortedStockDataKeys = sorted(map(lambda d: formatDate(d), stockData.keys()))
+# #sortedStockDataKeys = sorted(stockData.keys(), key=lambda d: map(formatDate, d))
+#
+#
+# #---- DATA STRUCTURING (FORMING EPOKS) ----
+# epoks = []
+# epok = {}
+#
+# counter = 0
+# for dateKey in sortedStockDataKeys:
+#     if counter < interval:
+#         regularTime = datetime.datetime.fromtimestamp(int(dateKey)).strftime('%Y-%m-%d %H:%M:%S')
+#         epok[regularTime] = stockData[regularTime]
+#         counter += 1
+#     else:
+#         epoks.append(epok)
+#         epok = {}
+#         counter = 0
+#
+# #---- WEDGE CONSTRUCTION ----
+#
+#
+# finalData = []
+# counter = 0
+#
+# # Iterate over each epok containing 5 dictionaries
+# for epok in epoks:
+#
+#     # List of all close prices in current epok
+#     closePrices = []
+#
+#     # Iterate over each dictionary within epok
+#     for date in epok:
+#         currentClosePrice = float(epok[date]["4. close"])
+#
+#         # Convert time to UNIX time
+#         unixTime = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
+#         closePrices.append([float(unixTime), float(currentClosePrice)])
+#
+#     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
+#     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
+#
+#     # Only use epok if RAISING wedge exists
+#     if get_wedges(sortedClosePrices) == 0:
+#
+#         # Check if current wedge leads to higher or lower price next epok
+#         nextEpok = epoks[counter+1]
+#         if is_bull(nextEpok, currentEpokHighest):
+#             fin = np.append(np.array(sortedClosePrices)[:,1],int(1)).tolist()
+#             finalData.append(fin)
+#         else:
+#             fin = np.append(np.array(sortedClosePrices)[:,1],int(0)).tolist()
+#             finalData.append(fin)
+#
+#     counter += 1
