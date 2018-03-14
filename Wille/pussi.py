@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import datetime
 from operator import itemgetter
 import csv
+from time import sleep
 
 #---- CONSTANTS ----
 API_KEY = "EBHYLXXG3AQGI8XN"
@@ -181,7 +182,9 @@ def saveFinalData(finalData):
 #---- SUPER FUNCTION ----
 
 
+# Uses all main functions defined above and saves final data to be used as input in the neural network
 def collectDataForSymbol(symbol):
+    sleep(20)
     stockData = loadData(symbol)
     if stockData != 0:
         epoks = formEpoks(stockData)
@@ -194,67 +197,8 @@ def collectDataForSymbol(symbol):
 #---- INITIATION ----
 
 
+# Will hold symbols for all S&P500 stocks
 allStocks = loadStockSymbols("sp500stocks.csv")
 
 # Maps the super function onto each stock
 map(lambda d: collectDataForSymbol(d), allStocks)
-
-
-# stockData = loadData()
-#
-# # Takes stockData and sorts all keys (the dates) and store them in array for later use
-# sortedStockDataKeys = sorted(map(lambda d: formatDate(d), stockData.keys()))
-# #sortedStockDataKeys = sorted(stockData.keys(), key=lambda d: map(formatDate, d))
-#
-#
-# #---- DATA STRUCTURING (FORMING EPOKS) ----
-# epoks = []
-# epok = {}
-#
-# counter = 0
-# for dateKey in sortedStockDataKeys:
-#     if counter < interval:
-#         regularTime = datetime.datetime.fromtimestamp(int(dateKey)).strftime('%Y-%m-%d %H:%M:%S')
-#         epok[regularTime] = stockData[regularTime]
-#         counter += 1
-#     else:
-#         epoks.append(epok)
-#         epok = {}
-#         counter = 0
-#
-# #---- WEDGE CONSTRUCTION ----
-#
-#
-# finalData = []
-# counter = 0
-#
-# # Iterate over each epok containing 5 dictionaries
-# for epok in epoks:
-#
-#     # List of all close prices in current epok
-#     closePrices = []
-#
-#     # Iterate over each dictionary within epok
-#     for date in epok:
-#         currentClosePrice = float(epok[date]["4. close"])
-#
-#         # Convert time to UNIX time
-#         unixTime = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S').strftime("%s")
-#         closePrices.append([float(unixTime), float(currentClosePrice)])
-#
-#     sortedClosePrices = sorted(closePrices, key=itemgetter(1))
-#     currentEpokHighest = sortedClosePrices[len(sortedClosePrices)-1][1]
-#
-#     # Only use epok if RAISING wedge exists
-#     if get_wedges(sortedClosePrices) == 0:
-#
-#         # Check if current wedge leads to higher or lower price next epok
-#         nextEpok = epoks[counter+1]
-#         if is_bull(nextEpok, currentEpokHighest):
-#             fin = np.append(np.array(sortedClosePrices)[:,1],int(1)).tolist()
-#             finalData.append(fin)
-#         else:
-#             fin = np.append(np.array(sortedClosePrices)[:,1],int(0)).tolist()
-#             finalData.append(fin)
-#
-#     counter += 1
