@@ -30,7 +30,7 @@ address = "https://api.binance.com/api/v1/klines?symbol=%s&interval=%s&startTime
 
 one_day = requests.get(address)
 one_day_dict = json.loads(one_day.content)
-#print one_day_dict[1]
+print one_day_dict
 
 # --- CATALOGING ---
 
